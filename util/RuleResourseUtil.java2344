@@ -1,0 +1,110 @@
+package com.ruleEngine.util;
+
+import java.io.IOException;
+import java.io.StringReader;
+import java.util.Collection;
+
+import org.drools.KnowledgeBase;
+import org.drools.KnowledgeBaseFactory;
+import org.drools.RuleBase;
+import org.drools.RuleBaseFactory;
+import org.drools.StatefulSession;
+import org.drools.builder.DecisionTableConfiguration;
+import org.drools.builder.DecisionTableInputType;
+import org.drools.builder.KnowledgeBuilder;
+import org.drools.builder.KnowledgeBuilderFactory;
+import org.drools.builder.ResourceConfiguration;
+import org.drools.builder.ResourceType;
+import org.drools.compiler.DroolsParserException;
+import org.drools.compiler.PackageBuilder;
+import org.drools.io.Resource;
+import org.drools.io.ResourceFactory;
+import org.drools.runtime.StatefulKnowledgeSession;
+/** 
+ * RuleResourseUtil 
+ * Majiang 2013/01/18
+ */
+public class RuleResourseUtil {
+	
+	
+	/**
+	 * 从DRL文件中获取规则
+	 * @param path
+	 * @return
+	 */
+	public static  StatefulKnowledgeSession  getDRLResourse(String path){
+		
+		KnowledgeBuilder kbuilder = KnowledgeBuilderFactory.newKnowledgeBuilder();
+		kbuilder.add(ResourceFactory.newClassPathResource(path), ResourceType.DRL);
+		 if ( kbuilder.hasErrors() ) {
+	            System.out.println( kbuilder.getErrors().toString() );
+		            throw new RuntimeException( "Unable to compile \"." ); 
+		  }
+		 Collection pkgs = kbuilder.getKnowledgePackages();
+		 KnowledgeBase kbase = KnowledgeBaseFactory.newKnowledgeBase();
+		 kbase.addKnowledgePackages(pkgs);
+		 StatefulKnowledgeSession ksession = kbase.newStatefulKnowledgeSession();
+		
+		 return ksession;
+	}
+	/**
+	 * 从决策表中获取规则
+	 * @param path
+	 * @return
+	 * @throws IOException 
+	 * @throws DroolsParserException 
+	 */
+	public static StatefulSession getXLSResourse(String url) throws DroolsParserException, IOException{
+		
+	    DecisionTableConfiguration dtableconfiguration = KnowledgeBuilderFactory.newDecisionTableConfiguration();
+	    dtableconfiguration.setWorksheetName("Tables");
+		dtableconfiguration.setInputType(DecisionTableInputType.XLS);
+	    PackageBuilder builder = new PackageBuilder();
+	   
+		builder.addPackageFromDecisionTable(ResourceFactory.newUrlResource(url), dtableconfiguration );
+		org.drools.rule.Package pkg = builder.getPackage();
+		RuleBase ruleBase = RuleBaseFactory.newRuleBase();
+		ruleBase.addPackage(pkg);
+		if ( builder.hasErrors() ) {
+			String error =  builder.getErrors().toString();
+		            throw new RuntimeException( error); 
+	      }
+		
+		StatefulSession session = ruleBase.newStatefulSession();
+		return session;
+	}
+	/**
+	 * 从字符流中获取规则
+	 * @param path
+	 * @return
+	 */
+	public static StatefulSession getDrlResourseFromStream(String orig) throws Exception{
+		StringReader sReader = new StringReader(orig);
+		PackageBuilder builder = new PackageBuilder();
+		builder.addPackageFromDrl(sReader);
+		org.drools.rule.Package pkg = builder.getPackage();
+		RuleBase ruleBase = RuleBaseFactory.newRuleBase();
+		ruleBase.addPackage(pkg);
+		
+		StatefulSession session = ruleBase.newStatefulSession();
+		return session;
+	}
+	/**
+	 * 验证规则是否编译通过
+	 * @param orig
+	 * @return
+	 * @throws Exception
+	 */
+	public static String validateRules(String orig) throws Exception{
+		String error = "";
+		StringReader sReader = new StringReader(orig);
+		PackageBuilder builder = new PackageBuilder();
+		builder.addPackageFromDrl(sReader);
+		 if ( builder.hasErrors() ) {
+			 error =  builder.getErrors().toString();
+		            throw new RuntimeException( error); 
+	      }
+		 return error;
+	}
+
+}
